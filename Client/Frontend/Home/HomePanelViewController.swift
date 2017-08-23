@@ -63,7 +63,6 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
     var panels: [HomePanelDescriptor]!
     var url: URL?
     weak var delegate: HomePanelViewControllerDelegate?
-    weak var appStateDelegate: AppStateDelegate?
 
     fileprivate var buttonContainerView: UIView!
     fileprivate var buttonContainerBottomBorderView: UIView!
@@ -127,11 +126,6 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
         self.profile.panelDataObservers.activityStream.refreshIfNeeded(forceHighlights: false, forceTopSites: true)
     }
 
-    fileprivate func updateAppState() {
-        let state = mainStore.updateState(.homePanels(homePanelState: homePanelState))
-        self.appStateDelegate?.appDidUpdateState(state)
-    }
-
     func SELhandleDismissKeyboardGestureRecognizer(_ gestureRecognizer: UITapGestureRecognizer) {
         view.window?.rootViewController?.view.endEditing(true)
     }
@@ -174,7 +168,6 @@ class HomePanelViewController: UIViewController, UITextFieldDelegate, HomePanelD
                 }
             }
             self.updateButtonTints()
-            self.updateAppState()
         }
     }
 
