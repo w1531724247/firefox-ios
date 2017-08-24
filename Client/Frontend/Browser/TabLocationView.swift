@@ -37,8 +37,8 @@ struct TabLocationViewUX {
         theme = Theme()
         theme.textColor = UIColor(rgb: 0x27)
         theme.highlightButtonColor = UIColor(rgb: 0x00A2FE)
-        theme.buttonTintColor = UIColor(rgb: 0x272727)
-        theme.backgroundColor = UIConstants.locationBarBG
+        theme.buttonTintColor = UIColor(rgb: 0x737373)
+        theme.backgroundColor = .white
         themes[Theme.NormalMode] = theme
 
         return themes
@@ -152,7 +152,7 @@ class TabLocationView: UIView {
         addSubview(urlTextField)
         addSubview(lockImageView)
         addSubview(readerModeButton)
-
+        
         lockImageView.snp.makeConstraints { make in
             make.size.equalTo(24)
             make.centerY.equalTo(self)
@@ -186,13 +186,13 @@ class TabLocationView: UIView {
             if lockImageView.isHidden {
                 make.leading.equalTo(self).offset(TabLocationViewUX.LocationContentInset)
             } else {
-                make.leading.equalTo(self.lockImageView.snp.trailing).offset(9)
+                make.leading.equalTo(self.lockImageView.snp.trailing).offset(4)
             }
 
             if readerModeButton.isHidden {
                 make.trailing.equalTo(self).offset(-TabLocationViewUX.LocationContentInset)
             } else {
-                make.trailing.equalTo(self.readerModeButton.snp.leading)
+                make.trailing.equalTo(self.readerModeButton.snp.leading).offset(-2)
             }
         }
 

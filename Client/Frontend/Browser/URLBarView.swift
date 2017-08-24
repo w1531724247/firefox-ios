@@ -17,7 +17,7 @@ struct URLBarViewUX {
     static let LocationHeight = 42
     static let LocationContentOffset: CGFloat = 8
     static let TextFieldCornerRadius: CGFloat = 8
-    static let TextFieldBorderWidth: CGFloat = 0
+    static let TextFieldBorderWidth: CGFloat = 1
     // offset from edge of tabs button
     static let ProgressTintColor = UIColor(rgb: 0x00dcfc)
 
@@ -28,7 +28,7 @@ struct URLBarViewUX {
     static let Themes: [String: Theme] = {
         var themes = [String: Theme]()
         var theme = Theme()
-        theme.borderColor = UIColor(rgb: 0xf9f9fa)
+        theme.borderColor = UIColor(rgb: 0x737373).withAlphaComponent(0.3)
         theme.backgroundColor = UIColor(rgb: 0x4A4A4F)
         theme.activeBorderColor = UIConstants.PrivateModePurple
         theme.tintColor = UIColor(rgb: 0xf9f9fa)
@@ -72,6 +72,32 @@ protocol URLBarDelegate: class {
     func urlBar(_ urlBar: URLBarView, didEnterText text: String)
     func urlBar(_ urlBar: URLBarView, didSubmitText text: String)
     func urlBarDisplayTextForURL(_ url: URL?) -> String?
+}
+
+// We need a subclass so we can setup the shadows/borders correctly
+class TabLocationContainerView: UIView {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        let layer = self.layer
+        layer.cornerRadius = 4
+        layer.shadowRadius = 2
+        layer.shadowOpacity = 1
+        layer.masksToBounds = false
+    }
+    
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+        let layer = self.layer
+        layer.cornerRadius = 4
+        
+        layer.shadowOffset = CGSize(width: 0, height: 1)
+        let shadowPath = CGRect(x: 2, y: 2, width: layer.frame.width - 4, height: layer.frame.height - 4)
+        layer.shadowPath = UIBezierPath(roundedRect: shadowPath, cornerRadius: layer.cornerRadius).cgPath
+        super.layoutSubviews()
+    }
 }
 
 class URLBarView: UIView {
@@ -126,17 +152,12 @@ class URLBarView: UIView {
     }()
 
     lazy var locationContainer: UIView = {
-        let locationContainer = UIView()
+        let locationContainer = TabLocationContainerView()
         locationContainer.translatesAutoresizingMaskIntoConstraints = false
-
-        // Enable clipping to apply the rounded edges to subviews.
-        locationContainer.clipsToBounds = true
-
-        locationContainer.layer.borderColor = self.locationBorderColor.cgColor
-        locationContainer.layer.cornerRadius = URLBarViewUX.TextFieldCornerRadius
+        locationContainer.layer.shadowColor = self.locationBorderColor.cgColor
         locationContainer.layer.borderWidth = URLBarViewUX.TextFieldBorderWidth
-        locationContainer.backgroundColor = UIConstants.locationBarBG
-
+        locationContainer.layer.borderColor = self.locationBorderColor.cgColor
+        locationContainer.backgroundColor = .clear
         return locationContainer
     }()
     
