@@ -28,7 +28,7 @@ struct URLBarViewUX {
     static let Themes: [String: Theme] = {
         var themes = [String: Theme]()
         var theme = Theme()
-        theme.borderColor = UIColor(rgb: 0x737373).withAlphaComponent(0.3)
+        theme.borderColor = UIColor(rgb: 0x0C0C0D).withAlphaComponent(0.2)
         theme.backgroundColor = UIColor(rgb: 0x4A4A4F)
         theme.activeBorderColor = UIConstants.PrivateModePurple
         theme.tintColor = UIColor(rgb: 0xf9f9fa)
@@ -39,7 +39,7 @@ struct URLBarViewUX {
         themes[Theme.PrivateMode] = theme
 
         theme = Theme()
-        theme.borderColor = TextFieldBorderColor
+        theme.borderColor =  UIColor(rgb: 0x737373).withAlphaComponent(0.3)
         theme.activeBorderColor = TextFieldActiveBorderColor
         theme.disabledButtonColor = UIColor.lightGray
         theme.highlightButtonColor = UIColor(rgb: 0x00A2FE)
@@ -239,6 +239,7 @@ class URLBarView: UIView {
 
     fileprivate func commonInit() {
         locationContainer.addSubview(locationView)
+        locationView.layer.cornerRadius = locationContainer.layer.cornerRadius
     
         [scrollToTopButton, line, progressBar, tabsButton, cancelButton, shareButton].forEach { addSubview($0) }
         [menuButton, forwardButton, backButton, stopReloadButton, locationContainer].forEach { addSubview($0) }
@@ -736,14 +737,14 @@ class ToolbarTextField: AutocompleteTextField {
     static let Themes: [String: Theme] = {
         var themes = [String: Theme]()
         var theme = Theme()
-        theme.backgroundColor = UIConstants.PrivateModeLocationBackgroundColor
+        theme.backgroundColor = UIColor(rgb: 0x636369)
         theme.textColor = UIColor.white
         theme.buttonTintColor = UIColor.white
         theme.highlightColor = UIConstants.PrivateModeInputHighlightColor
         themes[Theme.PrivateMode] = theme
 
         theme = Theme()
-        theme.backgroundColor = UIColor(rgb: 0xD7D7DB)
+        theme.backgroundColor = .white
         theme.textColor = UIColor(rgb: 0x272727)
         theme.highlightColor = AutocompleteTextFieldUX.HighlightColor
         themes[Theme.NormalMode] = theme

@@ -31,7 +31,7 @@ struct TabLocationViewUX {
         theme.textColor = UIColor(rgb: 0xf9f9fa)
         theme.highlightButtonColor = UIConstants.PrivateModePurple
         theme.buttonTintColor = UIColor(rgb: 0xf9f9fa)
-        theme.backgroundColor = UIConstants.PrivateModeLocationBackgroundColor
+        theme.backgroundColor = UIColor(rgb: 0x636369)
         themes[Theme.PrivateMode] = theme
 
         theme = Theme()
