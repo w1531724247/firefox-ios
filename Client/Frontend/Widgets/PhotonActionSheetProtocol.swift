@@ -181,7 +181,7 @@ extension PhotonActionSheetProtocol {
             openURL(nil, true)
         }
         
-        let openTabTray = PhotonActionSheetItem(title: "Show Tabs", iconString: "") { action in
+        let openTabTray = PhotonActionSheetItem(title: "Show Tabs", iconString: "menu-Show-Tabs") { action in
             //TODO: This has its own bug
         }
         
