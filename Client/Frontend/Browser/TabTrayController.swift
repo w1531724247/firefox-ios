@@ -103,7 +103,7 @@ class TabCell: UICollectionViewCell {
         super.init(frame: frame)
         
         self.animator = SwipeAnimator(animatingView: self.backgroundHolder, container: self)
-        self.closeButton.addTarget(self, action: #selector(TabCell.SELclose), for: UIControlEvents.touchUpInside)
+        self.closeButton.addTarget(self, action: #selector(TabCell.closeTab), for: UIControlEvents.touchUpInside)
 
         contentView.addSubview(backgroundHolder)
         backgroundHolder.addSubview(self.background)
@@ -113,7 +113,7 @@ class TabCell: UICollectionViewCell {
         applyStyle(style)
 
         self.accessibilityCustomActions = [
-            UIAccessibilityCustomAction(name: NSLocalizedString("Close", comment: "Accessibility label for action denoting closing a tab in tab list (tray)"), target: self.animator, selector: #selector(SwipeAnimator.SELcloseWithoutGesture))
+            UIAccessibilityCustomAction(name: NSLocalizedString("Close", comment: "Accessibility label for action denoting closing a tab in tab list (tray)"), target: self.animator, selector: #selector(SwipeAnimator.closeTabWithoutGesture))
         ]
     }
 
@@ -125,7 +125,6 @@ class TabCell: UICollectionViewCell {
         case .light:
             title = UIVisualEffectView(effect: UIBlurEffect(style: .extraLight))
             self.titleText.textColor = LightTabCellUX.TabTitleTextColor
-            //self.closeButton
         case .dark:
             title = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
             self.titleText.textColor = DarkTabCellUX.TabTitleTextColor
@@ -204,9 +203,8 @@ class TabCell: UICollectionViewCell {
         return true
     }
 
-    @objc
-    func SELclose() {
-        self.animator.SELcloseWithoutGesture()
+    func closeTab() {
+        self.animator.closeTabWithoutGesture()
     }
 }
 
@@ -741,7 +739,7 @@ fileprivate class TabManagerDataSource: NSObject, UICollectionViewDataSource {
         tabs.append(tab)
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let tabCell = collectionView.dequeueReusableCell(withReuseIdentifier: TabCell.Identifier, for: indexPath) as! TabCell
         tabCell.animator.delegate = cellDelegate
         tabCell.delegate = cellDelegate
@@ -775,11 +773,11 @@ fileprivate class TabManagerDataSource: NSObject, UICollectionViewDataSource {
         return tabCell
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return tabs.count
     }
     
-    @objc fileprivate func collectionView(_ collectionView: UICollectionView, moveItemAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+    fileprivate func collectionView(_ collectionView: UICollectionView, moveItemAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
         let fromIndex = sourceIndexPath.item
         let toIndex = destinationIndexPath.item
         tabs.insert(tabs.remove(at: fromIndex), at: toIndex < fromIndex ? toIndex : toIndex - 1)
@@ -787,7 +785,7 @@ fileprivate class TabManagerDataSource: NSObject, UICollectionViewDataSource {
     }
 }
 
-@objc protocol TabSelectionDelegate: class {
+protocol TabSelectionDelegate: class {
     func didSelectTabAtIndex(_ index: Int)
 }
 
@@ -826,24 +824,24 @@ fileprivate class TabLayoutDelegate: NSObject, UICollectionViewDelegateFlowLayou
         }
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
         return TabTrayControllerUX.Margin
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         let cellWidth = floor((collectionView.bounds.width - TabTrayControllerUX.Margin * CGFloat(numberOfColumns + 1)) / CGFloat(numberOfColumns))
         return CGSize(width: cellWidth, height: self.cellHeightForCurrentDevice())
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return UIEdgeInsets(equalInset: TabTrayControllerUX.Margin)
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
         return TabTrayControllerUX.Margin
     }
 
-    @objc func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         tabSelectionDelegate?.didSelectTabAtIndex(indexPath.row)
     }
 }
@@ -947,7 +945,7 @@ extension TabTrayController: TabPeekDelegate {
     func tabPeekDidCloseTab(_ tab: Tab) {
         if let index = self.tabDataSource.tabs.index(of: tab),
             let cell = self.collectionView?.cellForItem(at: IndexPath(item: index, section: 0)) as? TabCell {
-            cell.SELclose()
+            cell.closeTab()
         }
     }
 

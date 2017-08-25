@@ -28,7 +28,7 @@ struct URLBarViewUX {
     static let Themes: [String: Theme] = {
         var themes = [String: Theme]()
         var theme = Theme()
-        theme.borderColor = UIColor(rgb: 0x0C0C0D).withAlphaComponent(0.2)
+        theme.borderColor = UIColor(rgb: 0x39393e)
         theme.backgroundColor = UIColor(rgb: 0x4A4A4F)
         theme.activeBorderColor = UIConstants.PrivateModePurple
         theme.tintColor = UIColor(rgb: 0xf9f9fa)
@@ -51,10 +51,6 @@ struct URLBarViewUX {
 
         return themes
     }()
-
-    static func backgroundColorWithAlpha(_ alpha: CGFloat) -> UIColor {
-        return UIConstants.AppBackgroundColor.withAlphaComponent(alpha)
-    }
 }
 
 protocol URLBarDelegate: class {
@@ -728,6 +724,7 @@ extension URLBarView: Themeable {
         backgroundColor = theme.backgroundColor
         tabsButton.applyTheme(themeName)
         line.backgroundColor = UIConstants.URLBarDivider.color(isPBM: themeName == Theme.PrivateMode)
+        locationContainer.layer.shadowColor = self.locationBorderColor.cgColor
     }
 
 
