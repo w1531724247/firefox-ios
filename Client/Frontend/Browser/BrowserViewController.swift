@@ -200,6 +200,7 @@ class BrowserViewController: UIViewController {
         if showToolbar {
             toolbar = TabToolbar()
             self.footer.addSubview(toolbar!)
+            self.footer.backgroundColor = toolbar?.backgroundColor
             toolbar?.tabToolbarDelegate = self
 
             // Need to reset the proper blur style
