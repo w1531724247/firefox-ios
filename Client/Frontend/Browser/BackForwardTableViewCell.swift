@@ -22,6 +22,7 @@ class BackForwardTableViewCell: UITableViewCell {
         let faviconView = UIImageView(image: FaviconFetcher.defaultFavicon)
         faviconView.backgroundColor = UIColor.white
         faviconView.layer.cornerRadius = 6
+        faviconView.contentMode = .center
         faviconView.layer.borderWidth = 0.5
         faviconView.layer.borderColor = UIColor(white: 0, alpha: 0.1).cgColor
         faviconView.layer.masksToBounds = true
@@ -50,6 +51,9 @@ class BackForwardTableViewCell: UITableViewCell {
         didSet {
             if let s = site {
                 faviconView.setFavicon(forSite: s, onCompletion: { [weak self] (color, url) in
+                    guard url == s.tileURL else {
+                        return
+                    }
                     if s.tileURL.isLocal {
                         self?.faviconView.image = UIImage(named: "faviconFox" )
                         self?.faviconView.backgroundColor = UIColor.white
@@ -57,7 +61,11 @@ class BackForwardTableViewCell: UITableViewCell {
                     }
                     
                     self?.faviconView.image = self?.faviconView.image?.createScaled(CGSize(width: BackForwardViewCellUX.IconSize, height: BackForwardViewCellUX.IconSize))
-                    self?.faviconView.contentMode = .center
+                    if self?.faviconView.backgroundColor == .clear {
+                        self?.faviconView.backgroundColor = .white
+                    } else {
+                        self?.faviconView.backgroundColor = color
+                    }
                 })
                 var title = s.title
                 if title.isEmpty {
