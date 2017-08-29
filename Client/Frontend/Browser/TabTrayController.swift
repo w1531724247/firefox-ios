@@ -22,7 +22,6 @@ struct TabTrayControllerUX {
     static let CloseButtonMargin = CGFloat(6.0)
     static let CloseButtonEdgeInset = CGFloat(10)
 
-    static let NumberOfColumnsThin = 1
     static let NumberOfColumnsWide = 3
     static let CompactNumberOfColumnsThin = 2
 
@@ -795,11 +794,9 @@ fileprivate class TabLayoutDelegate: NSObject, UICollectionViewDelegateFlowLayou
     fileprivate var traitCollection: UITraitCollection
     fileprivate var profile: Profile
     fileprivate var numberOfColumns: Int {
-        let compactLayout = profile.prefs.boolForKey("CompactTabLayout") ?? true
-
         // iPhone 4-6+ portrait
         if traitCollection.horizontalSizeClass == .compact && traitCollection.verticalSizeClass == .regular {
-            return compactLayout ? TabTrayControllerUX.CompactNumberOfColumnsThin : TabTrayControllerUX.NumberOfColumnsThin
+            return TabTrayControllerUX.CompactNumberOfColumnsThin
         } else {
             return TabTrayControllerUX.NumberOfColumnsWide
         }
@@ -812,8 +809,7 @@ fileprivate class TabLayoutDelegate: NSObject, UICollectionViewDelegateFlowLayou
     }
 
     fileprivate func cellHeightForCurrentDevice() -> CGFloat {
-        let compactLayout = profile.prefs.boolForKey("CompactTabLayout") ?? true
-        let shortHeight = (compactLayout ? TabTrayControllerUX.TextBoxHeight * 6 : TabTrayControllerUX.TextBoxHeight * 5)
+        let shortHeight = TabTrayControllerUX.TextBoxHeight * 6
 
         if self.traitCollection.verticalSizeClass == UIUserInterfaceSizeClass.compact {
             return shortHeight
