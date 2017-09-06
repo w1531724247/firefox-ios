@@ -1102,19 +1102,7 @@ class BrowserViewController: UIViewController {
     fileprivate func presentActivityViewController(_ url: URL, tab: Tab? = nil, sourceView: UIView?, sourceRect: CGRect, arrowDirection: UIPopoverArrowDirection) {
         var activities = [UIActivity]()
 
-        let findInPageActivity = FindInPageActivity() { [unowned self] in
-            self.updateFindInPageVisibility(visible: true)
-        }
-        activities.append(findInPageActivity)
-
-        if let tab = tab, (tab.getHelper(name: ReaderMode.name()) as? ReaderMode)?.state != .active {
-            let requestDesktopSiteActivity = RequestDesktopSiteActivity(requestMobileSite: tab.desktopSite) { [unowned tab] in
-                tab.toggleDesktopSite()
-            }
-            activities.append(requestDesktopSiteActivity)
-        }
-
-        let helper = ShareExtensionHelper(url: url, tab: tab, activities: activities)
+        let helper = ShareExtensionHelper(url: url, tab: tab)
 
         let controller = helper.createActivityViewController({ [unowned self] completed, _ in
             // After dismissing, check to see if there were any prompts we queued up
@@ -1125,15 +1113,6 @@ class BrowserViewController: UIViewController {
             // invoked on iOS 10. See Bug 1297768 for additional details.
             self.displayedPopoverController = nil
             self.updateDisplayedPopoverProperties = nil
-
-            if completed {
-                // We don't know what share action the user has chosen so we simply always
-                // update the toolbar and reader mode bar to reflect the latest status.
-                if let tab = tab {
-                    self.updateURLBarDisplayURL(tab)
-                }
-                self.updateReaderModeBar()
-            }
         })
 
         if let popoverPresentationController = controller.popoverPresentationController {
@@ -1180,23 +1159,6 @@ class BrowserViewController: UIViewController {
             self.findInPageBar = nil
             updateViewConstraints()
         }
-    }
-
-    func getCurrentAppState() -> AppState {
-        return mainStore.updateState(getCurrentUIState())
-    }
-
-    func getCurrentUIState() -> UIState {
-        if let homePanelController = homePanelController {
-            return .homePanels(homePanelState: homePanelController.homePanelState)
-        }
-        guard let tab = tabManager.selectedTab else {
-            return .loading
-        }
-        if tab.url == nil {
-            return .emptyTab
-        }
-        return .tab(tabState: tab.tabState)
     }
 
     @objc fileprivate func openSettings() {
@@ -1359,6 +1321,20 @@ extension BrowserViewController {
 }
 
 extension BrowserViewController: URLBarDelegate {
+    
+    func showTabTray() {
+        self.webViewContainerToolbar.isHidden = true
+        updateFindInPageVisibility(visible: false)
+        
+        let tabTrayController = TabTrayController(tabManager: tabManager, profile: profile, tabTrayDelegate: self)
+        
+        if let tab = tabManager.selectedTab {
+            screenshotHelper.takeScreenshot(tab)
+        }
+        
+        self.navigationController?.pushViewController(tabTrayController, animated: true)
+        self.tabTrayController = tabTrayController
+    }
 
     func urlBarDidPressReload(_ urlBar: URLBarView) {
         tabManager.selectedTab?.reload()
@@ -1369,17 +1345,7 @@ extension BrowserViewController: URLBarDelegate {
     }
 
     func urlBarDidPressTabs(_ urlBar: URLBarView) {
-        self.webViewContainerToolbar.isHidden = true
-        updateFindInPageVisibility(visible: false)
-
-        let tabTrayController = TabTrayController(tabManager: tabManager, profile: profile, tabTrayDelegate: self)
-
-        if let tab = tabManager.selectedTab {
-            screenshotHelper.takeScreenshot(tab)
-        }
-
-        self.navigationController?.pushViewController(tabTrayController, animated: true)
-        self.tabTrayController = tabTrayController
+        self.showTabTray()
     }
 
     func urlBarDidPressReaderMode(_ urlBar: URLBarView) {
@@ -1607,17 +1573,17 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to:nil, from:nil, for:nil)
         var actions: [[PhotonActionSheetItem]] = []
         
-        let homePanelActions = self.getHomePanelActions(openURL: { (url) in
-            self.openURLInNewTab(url, isPrivate: false, isPrivileged: true)
-        }, vcDelegate: self)
-        
-        let tabActions = self.getTabMenuActions(openURL: { (url, isPrivate) in
+        let urlAction = { (url, isPrivate) in
             self.openURLInNewTab(url, isPrivate: isPrivate, isPrivileged: true)
-        })
-        let systemActions = self.getOtherPanelActions()
-        actions.append(systemActions)
-        actions.append(homePanelActions)
-        actions.append(tabActions)
+        }
+        
+        let tabTrayAction = {
+            self.showTabTray()
+        }
+
+        actions.append(self.getOtherPanelActions())
+        actions.append(self.getHomePanelActions(openURL: urlAction, vcDelegate: self))
+        actions.append(self.getTabMenuActions(openURL: urlAction, showTabs: tabTrayAction))
         self.presentSheetWith(actions: actions, on: self, from: button)
     }
 
@@ -1630,13 +1596,17 @@ extension BrowserViewController: TabToolbarDelegate, PhotonActionSheetProtocol {
             self.updateFindInPageVisibility(visible: true)
         }
         
-        // The logic of which actions appear when isnt final.
-        if let tab = self.tabManager.selectedTab, let url = tab.url {
-            let pageActions = self.getTabActions(tab: tab, buttonView: button,
-                                                 presentShareMenu: actionMenuPresenter,
-                                                 findInPage: findInPageAction, presentableVC: self)
-            self.presentSheetWith(actions: pageActions, on: self, from: button)
+        guard let tab = self.tabManager.selectedTab, tab.url != nil else {
+            return
         }
+        
+        // The logic of which actions appear when isnt final.
+        let pageActions = self.getTabActions(tab: tab,
+                                             buttonView: button,
+                                             presentShareMenu: actionMenuPresenter,
+                                             findInPage: findInPageAction,
+                                             presentableVC: self)
+        self.presentSheetWith(actions: pageActions, on: self, from: button)
     }
 
     func showBackForwardList() {
@@ -2494,8 +2464,7 @@ extension BrowserViewController: IntroViewControllerDelegate {
             }
             present(introViewController, animated: true) {
                 // On first run (and forced) open up the homepage in the background.
-                let state = self.getCurrentAppState()
-                if let homePageURL = HomePageAccessors.getHomePage(state), let tab = self.tabManager.selectedTab, DeviceInfo.hasConnectivity() {
+                if let homePageURL = HomePageAccessors.getHomePage(self.profile.prefs), let tab = self.tabManager.selectedTab, DeviceInfo.hasConnectivity() {
                     tab.loadRequest(URLRequest(url: homePageURL))
                 }
             }

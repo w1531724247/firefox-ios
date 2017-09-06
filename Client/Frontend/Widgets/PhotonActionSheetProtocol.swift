@@ -13,6 +13,8 @@ protocol PhotonActionSheetProtocol {
 
 extension PhotonActionSheetProtocol {
     typealias PresentableVC = UIViewController & UIPopoverPresentationControllerDelegate
+    typealias MenuAction = () -> Void
+    typealias URLOpenAction = (URL?, Bool) -> Void
     
     func presentSheetWith(actions: [[PhotonActionSheetItem]], on viewController: PresentableVC, from view: UIView) {
         let sheet = PhotonActionSheet(actions: actions)
@@ -31,7 +33,7 @@ extension PhotonActionSheetProtocol {
     
     //Returns a list of actions which is used to build a menu
     //parameter OpenURL is a clousre that can open a given URL in some view controller. It is up to the class using the menu to know how to open the url
-    func getHomePanelActions(openURL: @escaping (URL) -> Void, vcDelegate: PageOptionsVC) -> [PhotonActionSheetItem] {
+    func getHomePanelActions(openURL: @escaping URLOpenAction, vcDelegate: PageOptionsVC) -> [PhotonActionSheetItem] {
         let openQR = PhotonActionSheetItem(title: "QR Scanner", iconString: "menu-ScanQRCode") { action in
             let qrCodeViewController = QRCodeViewController()
             qrCodeViewController.qrCodeDelegate = vcDelegate
@@ -52,19 +54,19 @@ extension PhotonActionSheetProtocol {
         }
         
         let openTopSites = PhotonActionSheetItem(title: Strings.AppMenuTopSitesTitleString, iconString: "menu-panel-TopSites") { action in
-            openURL(HomePanelType.topSites.localhostURL)
+            openURL(HomePanelType.topSites.localhostURL, false)
         }
         
         let openBookmarks = PhotonActionSheetItem(title: Strings.AppMenuBookmarksTitleString, iconString: "menu-panel-Bookmarks") { action in
-            openURL(HomePanelType.bookmarks.localhostURL)
+            openURL(HomePanelType.bookmarks.localhostURL, false)
         }
         
         let openHistory = PhotonActionSheetItem(title: Strings.AppMenuHistoryTitleString, iconString: "menu-panel-History") { action in
-            openURL(HomePanelType.history.localhostURL)
+            openURL(HomePanelType.history.localhostURL, false)
         }
         
         let openReadingList = PhotonActionSheetItem(title: Strings.AppMenuReadingListTitleString, iconString: "menu-panel-ReadingList") { action in
-            openURL(HomePanelType.readingList.localhostURL)
+            openURL(HomePanelType.readingList.localhostURL, false)
         }
         
         return [openQR, openSettings, openTopSites, openBookmarks, openHistory, openReadingList]
@@ -141,7 +143,7 @@ extension PhotonActionSheetProtocol {
             guard let url = tab.url else { return }
             let absoluteString = url.absoluteString
             self.profile.bookmarks.modelFactory >>== {
-                $0.removeByURL(absoluteString).uponQueue(DispatchQueue.main) { res in
+                $0.removeByURL(absoluteString).uponQueue(.main) { res in
                     if res.isSuccess {
                         tab.isBookmarked = false
                     }
@@ -166,7 +168,7 @@ extension PhotonActionSheetProtocol {
         return [topActions, [findInPageAction, toggleDesktopSite, setHomePage], [share, copyURL]]
     }
     
-    func getTabMenuActions(openURL: @escaping (URL?, Bool) -> Void) -> [PhotonActionSheetItem] {
+    func getTabMenuActions(openURL: @escaping URLOpenAction, showTabs showTabsTrayAction: @escaping MenuAction) -> [PhotonActionSheetItem] {
         
         let openHomePage = PhotonActionSheetItem(title: "Open Home Page", iconString: "menu-Home") { _ in
             guard let tab = self.tabManager.selectedTab else { return }
@@ -183,6 +185,7 @@ extension PhotonActionSheetProtocol {
         
         let openTabTray = PhotonActionSheetItem(title: "Show Tabs", iconString: "menu-Show-Tabs") { action in
             //TODO: This has its own bug
+            showTabsTrayAction()
         }
         
         var actions = [openTab, openPrivateTab]
