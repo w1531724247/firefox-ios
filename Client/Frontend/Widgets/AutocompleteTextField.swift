@@ -79,6 +79,19 @@ class AutocompleteTextField: UITextField, UITextFieldDelegate {
             }
         })
     }
+    
+    override func layoutSubviews() {
+        if isSelectionActive {
+            
+        }
+        super.layoutSubviews()
+        
+    }
+    
+    override func editingRect(forBounds bounds: CGRect) -> CGRect {
+        let newBounds = super.editingRect(forBounds: bounds)
+        return UIEdgeInsetsInsetRect(newBounds, UIEdgeInsetsMake(0, 5, 0, 0))
+    }
 
     override var keyCommands: [UIKeyCommand]? {
         return [
@@ -206,7 +219,8 @@ class AutocompleteTextField: UITextField, UITextFieldDelegate {
         label.backgroundColor = self.backgroundColor
 
         let enteredTextSize = self.attributedText?.boundingRect(with: self.frame.size, options: NSStringDrawingOptions.usesLineFragmentOrigin, context: nil)
-        frame.origin.x = (enteredTextSize?.width.rounded() ?? 0)
+        let leftMargin = (self.leftView?.frame.width ?? 0) + 5
+        frame.origin.x = (enteredTextSize?.width.rounded() ?? 0) + leftMargin
         frame.size.width = self.frame.size.width - frame.origin.x
         frame.size.height = self.frame.size.height - 1
         label.frame = frame

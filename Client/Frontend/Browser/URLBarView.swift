@@ -12,8 +12,8 @@ private let log = Logger.browserLogger
 
 struct URLBarViewUX {
     static let TextFieldBorderColor = UIColor(rgb: 0xBBBBBB)
-    static let TextFieldActiveBorderColor = UIColor(rgb: 0x4A90E2)
-    static let LocationLeftPadding = 5
+    static let TextFieldActiveBorderColor = UIColor(rgb: 0xB0D5FB)
+    static let LocationLeftPadding = 8
     static let LocationHeight = 42
     static let LocationContentOffset: CGFloat = 8
     static let TextFieldCornerRadius: CGFloat = 8
@@ -63,6 +63,7 @@ protocol URLBarDelegate: class {
     func urlBarDidEnterOverlayMode(_ urlBar: URLBarView)
     func urlBarDidLeaveOverlayMode(_ urlBar: URLBarView)
     func urlBarDidLongPressLocation(_ urlBar: URLBarView)
+    func urlBarDidPressQRButton(_ urlBar: URLBarView)
     func urlBarLocationAccessibilityActions(_ urlBar: URLBarView) -> [UIAccessibilityCustomAction]?
     func urlBarDidPressScrollToTop(_ urlBar: URLBarView)
     func urlBar(_ urlBar: URLBarView, didEnterText text: String)
@@ -313,13 +314,24 @@ class URLBarView: UIView {
         super.updateConstraints()
         if inOverlayMode {
             // In overlay mode, we always show the location view full width
+            self.locationContainer.layer.borderWidth = 4
             self.locationContainer.snp.remakeConstraints { make in
-                make.leading.equalTo(self).offset(URLBarViewUX.LocationLeftPadding)
-                make.trailing.equalTo(self.cancelButton.snp.leading)
-                make.height.equalTo(URLBarViewUX.LocationHeight)
+                make.leading.equalTo(self).offset(URLBarViewUX.LocationLeftPadding - 4)
+                make.trailing.equalTo(self.cancelButton.snp.leading).offset(4)
+                make.height.equalTo(URLBarViewUX.LocationHeight+8)
                 make.centerY.equalTo(self)
             }
+            self.locationView.snp.remakeConstraints { make in
+                make.edges.equalTo(self.locationContainer).inset(UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4))
+            }
+            self.locationTextField?.snp.remakeConstraints { make in
+                make.edges.equalTo(self.locationContainer).inset(UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4))
+            }
         } else {
+            self.locationContainer.layer.borderWidth = 1
+            self.locationView.snp.remakeConstraints { make in
+                make.edges.equalTo(self.locationContainer).inset(UIEdgeInsets(top: 1, left: 1, bottom: 1, right: 1))
+            }
             if topTabsIsShowing {
                 tabsButton.snp.remakeConstraints { make in
                     make.centerY.equalTo(self.locationContainer)
@@ -340,15 +352,19 @@ class URLBarView: UIView {
                     make.trailing.equalTo(self.shareButton.snp.leading)
                 } else {
                     // Otherwise, left align the location view
-                    make.leading.equalTo(self).offset(URLBarViewUX.LocationLeftPadding)
-                    make.trailing.equalTo(self.tabsButton.snp.leading)
+                    make.leading.equalTo(self).offset(URLBarViewUX.LocationLeftPadding-1)
+                    make.trailing.equalTo(self.tabsButton.snp.leading).offset(1)
                 }
 
-                make.height.equalTo(URLBarViewUX.LocationHeight)
+                make.height.equalTo(URLBarViewUX.LocationHeight+2)
                 make.centerY.equalTo(self)
             }
         }
 
+    }
+    
+    func showQRScanner() {
+        self.delegate?.urlBarDidPressQRButton(self)
     }
 
     func createLocationTextField() {
@@ -357,7 +373,8 @@ class URLBarView: UIView {
         locationTextField = ToolbarTextField()
 
         guard let locationTextField = locationTextField else { return }
-
+        
+        locationTextField.showQRScannerButton.addTarget(self, action: #selector(URLBarView.showQRScanner), for: .touchUpInside)
         locationTextField.translatesAutoresizingMaskIntoConstraints = false
         locationTextField.autocompleteDelegate = self
         locationTextField.keyboardType = UIKeyboardType.webSearch
@@ -756,11 +773,29 @@ class ToolbarTextField: AutocompleteTextField {
             setNeedsLayout()
         }
     }
+    
+    // The QR mode button contains an image with a border only on the left side.
+    // This creates a button with a separator line between the text and qr code button.
+    var showQRScannerButton: UIButton = {
+        let button = UIButton()
+        button.setImage(UIImage.templateImageNamed("menu-ScanQRCode"), for: .normal)
+        button.clipsToBounds = false
+        button.imageEdgeInsets = UIEdgeInsets(top: 2, left: 9, bottom: 2, right: 9)
+        return button
+    }()
 
     fileprivate var tintedClearImage: UIImage?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        self.clearButtonMode = .always
+        self.leftView = showQRScannerButton
+        self.leftView!.frame = CGRect(x: 0, y: -2, width: 24+18, height: 28)
+        self.leftViewMode = .always
+        let separatorLine = CALayer()
+        separatorLine.backgroundColor = UIColor.lightGray.cgColor
+        separatorLine.frame = CGRect(x: self.leftView!.frame.width, y: 0, width: 1, height: self.leftView!.frame.height)
+        self.leftView!.layer.addSublayer(separatorLine)
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -774,7 +809,7 @@ class ToolbarTextField: AutocompleteTextField {
         // subviews, find the clear button, and tint it ourselves. Thanks to Mikael Hellman for the tip:
         // http://stackoverflow.com/questions/27944781/how-to-change-the-tint-color-of-the-clear-button-on-a-uitextfield
         for view in subviews as [UIView] {
-            if let button = view as? UIButton {
+            if let button = view as? UIButton, button != showQRScannerButton {
                 if let image = button.image(for: UIControlState()) {
                     if tintedClearImage == nil {
                         tintedClearImage = tintImage(image, color: clearButtonTintColor)
@@ -825,5 +860,6 @@ extension ToolbarTextField: Themeable {
         textColor = theme.textColor
         clearButtonTintColor = theme.buttonTintColor
         highlightColor = theme.highlightColor!
+        showQRScannerButton.tintColor = theme.textColor
     }
 }
